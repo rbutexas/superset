@@ -18,7 +18,7 @@
  */
 import http from 'node:http';
 import zlib from 'node:zlib';
-import { ZSTDCompress } from 'simple-zstd';
+import { compressBuffer } from 'simple-zstd';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
 // yargs ships ESM-only and jest's default transform doesn't cover
@@ -80,20 +80,6 @@ async function closeAll(...servers) {
   await Promise.all(
     servers.map(server => new Promise(resolve => server.close(resolve))),
   );
-}
-
-// simple-zstd only exposes streaming (de)compressors backed by the system
-// zstd binary, not a buffer-in/buffer-out helper -- wrap ZSTDCompress so the
-// tests below can compress a fixture in one call.
-function compressBuffer(buffer, level = 3) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    const compressor = ZSTDCompress(level);
-    compressor.on('data', chunk => chunks.push(chunk));
-    compressor.on('end', () => resolve(Buffer.concat(chunks)));
-    compressor.on('error', reject);
-    compressor.end(buffer);
-  });
 }
 
 describe('webpack.proxy-config zstd/gzip HTML decompression', () => {

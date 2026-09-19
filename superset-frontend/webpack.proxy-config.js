@@ -19,7 +19,7 @@
 import zlib from 'node:zlib';
 import { Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { ZSTDDecompress } from 'simple-zstd';
+import { decompress as createZstdDecompress } from 'simple-zstd';
 
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
@@ -122,16 +122,6 @@ function copyHeaders(originalResponse, response) {
 async function processHTML(proxyResponse, response) {
   const responseEncoding = proxyResponse.headers['content-encoding'];
   let uncompress;
-  // `simple-zstd`'s decompress stream is backed by a real `zstd -d` child
-  // process, but the stream it hands back doesn't forward `.destroy()` to
-  // that child -- so when `pipeline` below destroys it on an upstream
-  // error, the child is left running with its stdin still open instead of
-  // exiting. Track the underlying process (via the `started` event
-  // `simple-zstd` emits once it's actually spawned) so it can be killed
-  // explicitly; `killZstdChild` covers the race where destruction happens
-  // before that event fires.
-  let zstdChild;
-  let killZstdChild = false;
 
   // decode GZIP response
   if (responseEncoding === 'gzip') {
@@ -141,14 +131,11 @@ async function processHTML(proxyResponse, response) {
   } else if (responseEncoding === 'deflate') {
     uncompress = zlib.createInflate();
   } else if (responseEncoding === 'zstd') {
-    uncompress = ZSTDDecompress();
-    uncompress.once('started', childProcess => {
-      if (killZstdChild) {
-        childProcess.kill();
-      } else {
-        zstdChild = childProcess;
-      }
-    });
+    // The stream `simple-zstd` hands back is backed by a `zstd -dc` child
+    // process; destroying the stream (which `pipeline` does on any upstream
+    // error) ends the child's stdin and kills it, so no extra lifecycle
+    // management is needed here.
+    uncompress = await createZstdDecompress();
   }
 
   const chunks = [];
@@ -159,28 +146,20 @@ async function processHTML(proxyResponse, response) {
     },
   });
 
-  try {
-    // `pipeline` (unlike `.pipe()`) destroys every stream in the chain --
-    // and rejects -- as soon as any one of them errors or closes
-    // prematurely. A proxied backend connection dying mid-response (e.g.
-    // the Flask dev server's reloader restarting on a file save) is
-    // exactly that case: plain `.pipe()` never forwards the upstream
-    // error/close to `uncompress`, so `uncompress` (and, for `zstd`, the
-    // child process backing it) sits waiting for input that will never
-    // arrive, `end`/`error` never fire, and the client-facing response
-    // hangs forever instead of failing fast.
-    await pipeline(
-      ...(uncompress
-        ? [proxyResponse, uncompress, collector]
-        : [proxyResponse, collector]),
-    );
-  } finally {
-    if (zstdChild) {
-      zstdChild.kill();
-    } else {
-      killZstdChild = true;
-    }
-  }
+  // `pipeline` (unlike `.pipe()`) destroys every stream in the chain --
+  // and rejects -- as soon as any one of them errors or closes
+  // prematurely. A proxied backend connection dying mid-response (e.g.
+  // the Flask dev server's reloader restarting on a file save) is
+  // exactly that case: plain `.pipe()` never forwards the upstream
+  // error/close to `uncompress`, so `uncompress` (and, for `zstd`, the
+  // child process backing it) sits waiting for input that will never
+  // arrive, `end`/`error` never fire, and the client-facing response
+  // hangs forever instead of failing fast.
+  await pipeline(
+    ...(uncompress
+      ? [proxyResponse, uncompress, collector]
+      : [proxyResponse, collector]),
+  );
 
   response.end(toDevHTML(Buffer.concat(chunks).toString()));
 }
