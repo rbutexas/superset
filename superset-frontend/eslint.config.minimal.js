@@ -40,6 +40,7 @@ import tsParser from '@typescript-eslint/parser';
 import themeColorsPlugin from '@superset-ui/eslint-plugin-theme-colors';
 import iconsPlugin from '@superset-ui/eslint-plugin-icons';
 import i18nStringsPlugin from '@superset-ui/eslint-plugin-i18n-strings';
+import testingLibraryPlugin from 'eslint-plugin-testing-library';
 
 export default [
   // Files this config applies to. Flat config has no `--ext`; globs live here.
@@ -126,6 +127,40 @@ export default [
       'theme-colors/no-literal-colors': 'off',
       'icons/no-fa-icons-usage': 'off',
       'i18n-strings/no-template-vars': 'off',
+    },
+  },
+  {
+    // `@testing-library/user-event` v14 APIs return promises; an un-awaited
+    // call lets the following assertion race the event. Surfaced as a
+    // warning wherever tests live; promote to `'error'` once the remaining
+    // un-awaited sites are cleaned up.
+    files: ['**/*.test.{js,jsx,ts,tsx}', '**/*.spec.{js,jsx,ts,tsx}'],
+    plugins: {
+      'testing-library': testingLibraryPlugin,
+    },
+    rules: {
+      'testing-library/await-async-events': 'warn',
+    },
+  },
+  {
+    // Test files whose userEvent calls have been fully awaited; kept at
+    // `'error'` so they do not regress.
+    files: [
+      'src/SqlLab/components/SaveDatasetActionButton/SaveDatasetActionButton.test.tsx',
+      'src/SqlLab/components/ShareSqlLabQuery/ShareSqlLabQuery.test.tsx',
+      'src/SqlLab/components/SqlEditorLeftBar/SqlEditorLeftBar.test.tsx',
+      'src/components/RowCountLabel/RowCountLabel.test.tsx',
+      'src/dashboard/components/nativeFilters/FilterBar/FilterControls/GroupByFilterCard.test.tsx',
+      'src/explore/components/DataTablesPane/test/DataTablesPane.test.tsx',
+      'src/explore/components/controls/AnnotationLayerControl/AnnotationLayer.subdirectory.test.tsx',
+      'src/explore/components/controls/ColorSchemeControl/ColorSchemeControl.test.tsx',
+      'src/explore/components/controls/DndColumnSelectControl/ColumnSelectPopover.test.tsx',
+      'src/explore/components/controls/MetricControl/AdhocMetricEditPopover/AdhocMetricEditPopover.test.tsx',
+      'src/features/home/RightMenu.test.tsx',
+      'src/pages/Home/Home.test.tsx',
+    ],
+    rules: {
+      'testing-library/await-async-events': 'error',
     },
   },
 ];
