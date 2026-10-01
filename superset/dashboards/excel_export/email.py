@@ -35,7 +35,7 @@ from superset.utils.core import send_email_smtp
 _DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 _FOOTER_STYLE = "color:#888;font-size:12px;"
 _BUTTON_STYLE = (
-    "display:inline-block;padding:10px 16px;background:#20a7c9;color:#ffffff;"
+    "display:inline-block;padding:10px 16px;background:#1677ff;color:#ffffff;"
     "text-decoration:none;border-radius:4px;"
 )
 

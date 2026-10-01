@@ -1172,8 +1172,8 @@ _THEME_DEFAULT_BASE: Theme = {
         "brandSpinnerUrl": None,
         "brandSpinnerSvg": None,
         # Default colors
-        "colorPrimary": "#2893B3",  # NOTE: previous lighter primary color was #20a7c9 # noqa: E501
-        "colorLink": "#2893B3",
+        "colorPrimary": "#1677ff",
+        "colorLink": "#1677ff",
         "colorError": "#e04355",
         "colorWarning": "#fcc700",
         "colorSuccess": "#5ac189",

@@ -70,7 +70,7 @@ def _build_manifest(application_root: str, static_assets_prefix: str) -> dict[st
         "scope": f"{root}/",
         "display": "standalone",
         "background_color": "#ffffff",
-        "theme_color": "#20a7c9",
+        "theme_color": "#1677ff",
         "icons": [
             {
                 "src": f"{static_prefix}/static/assets/images/pwa/icon-192.png",
