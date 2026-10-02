@@ -227,7 +227,7 @@ const ScopeSelector = styled.div`
         }
 
         .react-checkbox-tree {
-          .rct-title .root {
+          .rct-label .root {
             font-weight: ${theme.fontWeightStrong};
           }
 
@@ -298,7 +298,7 @@ const ScopeSelector = styled.div`
           }
         }
 
-        .rct-options {
+        .rct-actions {
           text-align: left;
           margin-left: 0;
           margin-bottom: ${theme.sizeUnit * 2}px;
@@ -309,7 +309,7 @@ const ScopeSelector = styled.div`
           display: flex;
         }
 
-        .rct-title {
+        .rct-label {
           display: block;
         }
 
