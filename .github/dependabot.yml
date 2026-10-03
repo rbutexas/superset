@@ -49,6 +49,23 @@ updates:
       # hold comments). Remove this once the proxy code is updated to await
       # the async decompress() API.
       - dependency-name: "simple-zstd"
+      # Security triage determination (2026-09-20, finding
+      # `unresolvable-advisory:xlsx`, rbutexas/superset#1):
+      # `xlsx` is installed from https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz,
+      # not from the npm registry. GHSA-4r6h-8v6p-xvw6 (CVE-2023-30533, fixed in
+      # 0.19.3) and GHSA-5pgg-2g8v-p4x9 (CVE-2024-22363, fixed in 0.20.2) carry
+      # an open-ended OSV range (`introduced: 0`, no `fixed` event) because the
+      # fix releases were never published to the registry, so scanners flag
+      # 0.20.3 even though it is above both fix versions. Both CVEs concern
+      # parsing untrusted workbooks; Superset only writes workbooks
+      # (superset-frontend/src/utils/downloadAsPivotExcel.ts). Registry latest
+      # is 0.18.5, BELOW both fixes, so a "security update" to a registry
+      # release would be a downgrade into affected code. Never accept one.
+      # This entry ignores every version <= 0.20.3 and therefore stops applying
+      # as soon as any newer release exists — re-evaluate then, or by 2027-09-20
+      # if SheetJS has still not published >= 0.20.3 to the registry.
+      - dependency-name: "xlsx"
+        versions: ["<= 0.20.3"]
     directory: "/superset-frontend/"
     schedule:
       interval: "daily"
